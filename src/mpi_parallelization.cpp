@@ -5,26 +5,17 @@
 #include <iostream>
 #include <vector>
 
-// -----------------------------------------------------------------------------
-// Helper: Allocate and initialize an n x n matrix (allocated on rank 0 only).
-//         On other ranks, you could do a matching allocation (all processes
-//         do "new float*[n]" etc.), but fill it after broadcast.
-// -----------------------------------------------------------------------------
 float** allocate_and_init_matrix(int n) {
     float** matrix = new float*[n];
     for (int i = 0; i < n; i++) {
         matrix[i] = new float[n];
         for (int j = 0; j < n; j++) {
-            // Example initialization
             matrix[i][j] = i + j;
         }
     }
     return matrix;
 }
 
-// -----------------------------------------------------------------------------
-// Helper: Flatten a 2D array into a 1D array for easier MPI_Bcast, MPI_Gather.
-// -----------------------------------------------------------------------------
 void flatten_matrix(float** matrix, float* flat, int n) {
     for (int i = 0; i < n; i++) {
         for (int j = 0; j < n; j++) {
@@ -33,9 +24,6 @@ void flatten_matrix(float** matrix, float* flat, int n) {
     }
 }
 
-// -----------------------------------------------------------------------------
-// Helper: Un-flatten a 1D array into a 2D array. (Used after MPI_Bcast.)
-// -----------------------------------------------------------------------------
 void unflatten_matrix(const float* flat, float** matrix, int n) {
     for (int i = 0; i < n; i++) {
         for (int j = 0; j < n; j++) {
@@ -44,12 +32,9 @@ void unflatten_matrix(const float* flat, float** matrix, int n) {
     }
 }
 
-// -----------------------------------------------------------------------------
 // Parallel check symmetry. Each rank checks a portion of rows and does
 // local checks. Then MPI_Reduce (logical AND) to get the final result.
-// -----------------------------------------------------------------------------
 bool checkSymMPI(float** matrix, int n, int rank, int size) {
-    // Determine which rows this rank is responsible for
     int rows_per_rank = n / size;
     int start_row = rank * rows_per_rank;
     int end_row = (rank == size - 1) ? n : (rank + 1) * rows_per_rank;
@@ -63,7 +48,6 @@ bool checkSymMPI(float** matrix, int n, int rank, int size) {
         }
     }
 
-    // Combine partial results with logical AND across all ranks
     bool global_sym = false;
     MPI_Allreduce(&local_sym, &global_sym, 1, MPI_C_BOOL, MPI_LAND,
                   MPI_COMM_WORLD);
@@ -71,10 +55,6 @@ bool checkSymMPI(float** matrix, int n, int rank, int size) {
     return global_sym;
 }
 
-// -----------------------------------------------------------------------------
-// Parallel transpose. Each rank transposes the slice of rows it is
-// responsible for. Then we gather the transposed slices on rank 0.
-// -----------------------------------------------------------------------------
 float** transposeMPI(float** matrix, int n, int rank, int size) {
     // Allocate a local transposed slice:
     // We will store the transposed rows for [start_row .. end_row).
