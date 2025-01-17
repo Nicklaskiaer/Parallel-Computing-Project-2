@@ -11,3 +11,6 @@ compile:\
 mpic++ src/mpi_parallelization.cpp -o mpi_parallelization.exe\
 run:\
 mpirun -np 4 ./mpi_parallelization.exe
+
+to run python data analysis script:
+python3 src/data_analysis.py
